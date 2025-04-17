@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回合結果 - 王國沉浮錄</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body>
+    <div class="feedback-container">
+        <div class="feedback-card card">
+            <h2 id="feedbackTitle" class="feedback-title">回合結果</h2>
+
+            <div id="outcomeArea">
+                <p id="outcomeText">您的決策產生了以下影響...</p> </div>
+
+            <div id="resourceChangesArea" class="resource-changes">
+                <h3>資源變動：</h3>
+                <ul id="resourceChangesList">
+                    </ul>
+            </div>
+
+            <div id="initialStateArea" style="display: none;">
+                 <p>您的統治已然揭幕。初始國力如下：</p>
+                 <div class="initial-resources">
+                    <span id="initialPeople">🧍 5</span>
+                    <span id="initialArmy">🛡️ 5</span>
+                    <span id="initialTreasury">💰 5</span>
+                    <span id="initialFaith">✝️ 5</span>
+                 </div>
+                 <p>請點擊下方按鈕，迎接您的第一個挑戰。</p>
+            </div>
+
+            <button id="continueButton" class="continue-button">
+                繼續 (<span id="nextRoundNumber">下一回合</span>) </button>
+        </div>
+    </div>
+
+    </body>
+    <script src="script.js"></script>
+</html>

@@ -1,0 +1,459 @@
+/* --- Google Font Import --- */
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap');
+
+/* --- Base Styles --- */
+body {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    background-color: #1f1f1f; /* 非常深的灰色背景 */
+    color: #e8e8e8; /* 淺灰色文字 */
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column; /* 允許頁腳在下方 */
+    justify-content: center; /* 垂直置中主要內容 */
+    align-items: center; /* 水平置中 */
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* --- Shared Card Style --- */
+.card {
+    background-color: #2a2a2a; /* 深灰色卡片背景 */
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* 適合暗色的陰影 */
+    padding: 20px 25px; /* 預設 padding */
+    border: 1px solid #444444; /* 中度灰色邊框 */
+    text-align: center; /* 預設文字置中 */
+}
+
+/* --- Interface 1: Start Screen Styles --- */
+.start-container { /* 用於垂直置中 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    width: 100%;
+}
+.start-card {
+    max-width: 600px;
+    width: 90%;
+    padding: 30px 40px; /* 開始卡片使用較大 padding */
+    border-color: #555555; /* 開始卡片邊框稍亮 */
+}
+.game-title {
+    color: #f5f5f5; /* 最亮的白色標題 */
+    font-size: 2.8em;
+    font-weight: 800;
+    margin-top: 10px;
+    margin-bottom: 25px;
+    line-height: 1.3;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+}
+.game-intro {
+    font-size: 1.1em;
+    line-height: 1.8;
+    color: #cccccc; /* 稍暗的淺灰色說明文字 */
+    margin-bottom: 40px;
+}
+.start-button {
+    background-color: #cccccc; /* 淺灰色按鈕背景 */
+    color: #2a2a2a; /* 深灰色文字，形成對比 */
+    border: 1px solid #aaaaaa; /* 淺灰色邊框 */
+    border-radius: 8px;
+    padding: 15px 40px;
+    font-size: 1.25em;
+    font-weight: 700;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    display: inline-block;
+}
+.start-button:hover {
+    background-color: #e0e0e0; /* 滑鼠懸停時變亮 */
+    border-color: #f5f5f5; /* 邊框變白 */
+    color: #1f1f1f; /* 文字變更深 */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+    transform: translateY(-1px);
+}
+.start-button:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.start-footer { /* 共用頁腳樣式 */
+    width: 100%;
+    text-align: center;
+    margin-top: 30px;
+    padding-bottom: 15px;
+    font-size: 0.9em;
+    color: #888888; /* 中灰色頁腳文字 */
+    opacity: 0.8;
+}
+
+
+/* --- Interface 2: Main Game Styles --- */
+.game-container { /* 主遊戲容器 */
+    width: 100%;
+    max-width: 650px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px; /* 卡片間距 */
+}
+.status-card { /* 狀態欄 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333333;
+    box-shadow: none;
+    border: 1px solid #555555;
+    color: #f5f5f5;
+    padding: 15px 25px;
+    border-radius: 6px;
+    text-align: left;
+}
+.round-display { /* 回合數 */
+    font-size: 1.1em;
+    font-weight: 700;
+}
+.resources-display { /* 資源區 */
+    display: flex;
+    gap: 20px;
+}
+.resource { /* 單項資源 */
+    font-size: 1.1em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #f5f5f5;
+}
+.event-card { /* 事件卡片 */
+    line-height: 1.7;
+    text-align: left;
+    padding: 20px 25px; /* 使用預設 padding */
+}
+#eventDescription { /* 事件描述 */
+    margin: 0;
+    font-size: 1.05em;
+    color: #e8e8e8;
+}
+.stage-indicator { /* 階段指示 */
+    display: block;
+    margin-top: 12px;
+    font-style: italic;
+    font-size: 0.9em;
+    color: #aaaaaa;
+}
+.options-area { /* 選項區 */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.option-card { /* 選項按鈕 */
+    display: flex;
+    align-items: center;
+    text-align: left;
+    width: 100%;
+    padding: 15px 20px;
+    border: 1px solid #555555;
+    background-color: #333333;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
+    font-size: 1em;
+    color: #f0f0f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+.option-card:hover {
+    background-color: #404040;
+    border-color: #777777;
+}
+.option-card:active {
+     transform: scale(0.99);
+}
+.option-card:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: #2a2a2a;
+    border-color: #444444;
+}
+.option-id { /* 選項 A/B/C 標識 */
+    font-weight: 700;
+    margin-right: 15px;
+    min-width: 25px;
+    text-align: center;
+    background-color: #555555;
+    color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+.option-text { /* 選項文字 */
+    line-height: 1.5;
+    font-weight: 500;
+}
+.status-message-area { /* 狀態訊息 */
+    text-align: center;
+    padding: 10px 20px;
+    background-color: transparent;
+    color: #aaaaaa;
+    font-weight: 500;
+    font-style: normal;
+    box-shadow: none;
+    border: none;
+    margin-top: 5px;
+}
+
+
+/* --- Interface 3: Feedback Screen Styles --- */
+.feedback-container { /* 反饋畫面容器 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    flex-grow: 1; /* 佔據垂直空間 */
+}
+.feedback-card { /* 反饋卡片 */
+    max-width: 600px;
+    width: 90%;
+    padding: 35px 40px;
+    border-color: #555555;
+    text-align: center; /* 卡片內文字置中 */
+}
+.feedback-title { /* 反饋標題 */
+    color: #f5f5f5;
+    font-size: 1.8em;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 25px;
+    line-height: 1.3;
+    border-bottom: 1px solid #444444;
+    padding-bottom: 15px;
+}
+#outcomeArea { /* 結果描述區 */
+    margin-bottom: 30px;
+    text-align: left;
+    line-height: 1.7;
+    font-size: 1.05em;
+    color: #cccccc;
+}
+#outcomeArea p {
+    margin: 0;
+}
+.resource-changes { /* 資源變動區 */
+    margin-bottom: 35px;
+    text-align: left;
+    border: 1px solid #383838;
+    background-color: #222222;
+    padding: 18px 22px;
+    border-radius: 6px;
+}
+.resource-changes h3 { /* 資源變動標題 */
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #e0e0e0;
+    border-bottom: 1px solid #444444;
+    padding-bottom: 10px;
+}
+.resource-changes ul { /* 資源變動列表 */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+}
+.resource-changes li { /* 列表項 */
+    font-size: 1em;
+    font-weight: 500;
+    color: #cccccc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.resource-changes li::before { /* +/- 符號 */
+    font-weight: 700;
+    min-width: 1em;
+    display: inline-block;
+    text-align: right;
+    margin-right: 4px;
+}
+.resource-changes .change-positive::before { /* 增加 */
+    content: '+';
+    color: #77cc77;
+}
+.resource-changes .change-negative::before { /* 減少 */
+    content: '-';
+    color: #cc7777;
+}
+.resource-changes .change-neutral::before { /* 不變 */
+    content: '\00a0';
+}
+#initialStateArea { /* 初始狀態區 */
+    margin-bottom: 35px;
+    color: #cccccc;
+    text-align: center;
+}
+#initialStateArea p {
+    margin-bottom: 15px;
+    line-height: 1.7;
+}
+.initial-resources { /* 初始資源顯示 */
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 25px;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #f5f5f5;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+.initial-resources span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.continue-button { /* 繼續按鈕 */
+    background-color: #555555;
+    color: #f5f5f5;
+    border: 1px solid #777777;
+    border-radius: 8px;
+    padding: 12px 35px;
+    font-size: 1.1em;
+    font-weight: 700;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    display: inline-block;
+    margin-top: 10px;
+}
+.continue-button:hover {
+    background-color: #666666;
+    border-color: #999999;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+}
+.continue-button:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+
+/* --- Interface 4: Game Over Screen Styles --- */
+.game-over-container { /* 遊戲結束容器 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+.game-over-card { /* 遊戲結束卡片 */
+    max-width: 550px;
+    width: 90%;
+    padding: 35px 40px;
+    border-color: #777777; /* 稍亮的邊框 */
+    background-color: #252525; /* 稍不同的深灰 */
+    text-align: center;
+}
+.game-over-title { /* 遊戲結束標題 */
+    color: #f5f5f5;
+    font-size: 2.5em;
+    font-weight: 800;
+    margin-top: 0;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+    border-bottom: 1px solid #555555; /* 分隔線 */
+    padding-bottom: 15px;
+}
+.ending-text-area { /* 結局文字區 */
+    margin-bottom: 30px;
+    text-align: left;
+    line-height: 1.7;
+    font-size: 1.05em;
+    color: #cccccc;
+}
+.ending-text-area p {
+    margin: 0;
+}
+.final-stats { /* 最終統計 */
+    margin-bottom: 35px;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #e0e0e0;
+}
+.final-stats p {
+    margin: 5px 0;
+}
+.final-stats span { /* 統計數字加粗 */
+    font-weight: 700;
+    color: #f5f5f5;
+}
+.play-again-button { /* 重新開始按鈕 */
+    background-color: #cccccc; /* 與開始按鈕同風格 */
+    color: #2a2a2a;
+    border: 1px solid #aaaaaa;
+    border-radius: 8px;
+    padding: 14px 38px;
+    font-size: 1.15em;
+    font-weight: 700;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    display: inline-block;
+    margin-top: 10px;
+}
+.play-again-button:hover {
+    background-color: #e0e0e0;
+    border-color: #f5f5f5;
+    color: #1f1f1f;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+    transform: translateY(-1px);
+}
+.play-again-button:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+
+/* --- Loading Indicator (共用) --- */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(31, 31, 31, 0.85); /* 深灰色半透明背景 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* 確保在最上層 */
+    font-size: 1.1em;
+    color: #e8e8e8; /* 淺灰色文字 */
+}
+.spinner {
+    border: 4px solid rgba(232, 232, 232, 0.2); /* 淺灰色軌道 */
+    border-top: 4px solid #cccccc; /* 稍亮的灰色主體 */
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px; /* 與文字間距 */
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+

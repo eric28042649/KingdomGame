@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遊戲進行中 - 王國沉浮錄</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body>
+    <div class="game-container">
+        <div class="status-card card">
+            <div class="round-display">第 <span id="roundNumber">1</span> 回合</div>
+            <div class="resources-display">
+                <span class="resource" id="resourcePeople" title="人民">🧍 5</span>
+                <span class="resource" id="resourceArmy" title="軍隊">🛡️ 5</span>
+                <span class="resource" id="resourceTreasury" title="金庫">💰 5</span>
+                <span class="resource" id="resourceFaith" title="信仰">✝️ 5</span>
+            </div>
+        </div>
+
+        <div class="event-card card">
+            <div id="eventContent">
+                <p id="eventDescription">這裡將顯示事件的描述文字...</p>
+                <span id="eventStage" class="stage-indicator" style="display: none;"></span>
+            </div>
+        </div>
+
+        <div class="options-area">
+            <button class="option-card card" id="optionA" data-choice="A">
+                <span class="option-id">A</span>
+                <span class="option-text" id="optionAText">選項 A 的描述文字...</span>
+            </button>
+            <button class="option-card card" id="optionB" data-choice="B">
+                <span class="option-id">B</span>
+                <span class="option-text" id="optionBText">選項 B 的描述文字...</span>
+            </button>
+            <button class="option-card card" id="optionC" data-choice="C">
+                <span class="option-id">C</span>
+                <span class="option-text" id="optionCText">選項 C 的描述文字...</span>
+            </button>
+        </div>
+
+        <div class="status-message-area">
+            <p id="statusMessage">請選擇一個選項...</p>
+        </div>
+
+        <div id="loadingIndicator" class="loading-overlay" style="display: none;">
+            <div class="spinner"></div>
+            <p>主持人思考中...</p>
+        </div>
+    </div>
+
+    </body>
+    <script src="script.js"></script>
+</html>
