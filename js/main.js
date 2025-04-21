@@ -2,7 +2,7 @@
 // 主入口文件，負責初始化、頁面路由和協調其他模組
 
 // 導入設定
-import { INITIAL_RESOURCES } from './config.js';
+import { INITIAL_RESOURCES, MAX_HISTORY_TURNS, TYPEWRITER_SPEED, FEEDBACK_REVEAL_DELAY, GAMEOVER_REVEAL_DELAY, OPTION_REVEAL_DELAY } from './config.js'; // 補全導入
 
 // 導入狀態管理
 import { loadGameState, saveGameState, loadHistory, saveHistory } from './state.js';
@@ -22,9 +22,6 @@ import {
     populateFeedbackScreen,
     populateGameOverScreen
 } from './ui.js';
-
-// --- 全局變數 (如果需要，但盡量避免) ---
-// typewriterInterval 現在由 ui.js 管理
 
 // --- DOMContentLoaded 事件監聽器 (頁面路由) ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -158,7 +155,7 @@ function initStartScreen() {
 }
 
 /**
- * 初始化主遊戲畫面 (介面二)
+ * 初始化主遊戲畫面 (介面二) - 修正：移除提前跳轉 Game Over
  */
 function initMainGameScreen() {
     console.log("--- 初始化主遊戲畫面 (v5.4 Refactored) ---");
@@ -169,26 +166,24 @@ function initMainGameScreen() {
         console.error("[MainGame Init] 狀態無效：缺少 gameState。導航回首頁。");
         sessionStorage.removeItem('kingdomGameState_v5'); sessionStorage.removeItem('kingdomGameHistory_v5'); navigateTo('index.html'); return;
     }
-    if (!currentFullState.gameState.currentEvent) {
-        if (!currentFullState.gameState.gameOver?.isOver) {
-            console.error("[MainGame Init] 狀態無效：缺少 currentEvent 且遊戲未結束。導航回首頁。");
-            sessionStorage.removeItem('kingdomGameState_v5'); sessionStorage.removeItem('kingdomGameHistory_v5'); navigateTo('index.html'); return;
-        }
+    // 檢查 currentEvent 是否存在 (如果遊戲未結束)
+    if (!currentFullState.gameState.currentEvent && !currentFullState.gameState.gameOver?.isOver) {
+        console.error("[MainGame Init] 狀態無效：缺少 currentEvent 且遊戲未結束。導航回首頁。");
+        sessionStorage.removeItem('kingdomGameState_v5'); sessionStorage.removeItem('kingdomGameHistory_v5'); navigateTo('index.html'); return;
     }
      if (!currentFullState.gameState.resources) {
         console.error("[MainGame Init] 狀態無效：缺少 resources。導航回首頁。");
         sessionStorage.removeItem('kingdomGameState_v5'); sessionStorage.removeItem('kingdomGameHistory_v5'); navigateTo('index.html'); return;
     }
+     // 檢查選項結構 (如果遊戲未結束)
      if (!currentFullState.gameState.gameOver?.isOver && (!Array.isArray(currentFullState.gameState.currentEvent?.options) || currentFullState.gameState.currentEvent.options.length === 0 || !currentFullState.gameState.currentEvent.options.every(opt => opt && typeof opt.resourceChanges === 'object'))) {
         console.error("[MainGame Init] 狀態無效：currentEvent.options 結構不完整或缺少 resourceChanges。導航回首頁。", currentFullState.gameState.currentEvent?.options);
         sessionStorage.removeItem('kingdomGameState_v5'); sessionStorage.removeItem('kingdomGameHistory_v5'); navigateTo('index.html'); return;
      }
 
-     if (currentFullState.gameState.gameOver?.isOver) {
-         console.log("[MainGame Init] 檢測到遊戲已結束狀態，導航到結束畫面。");
-         navigateTo('game-over-screen.html');
-         return;
-     }
+     // **移除**此處的遊戲結束跳轉判斷，讓流程繼續
+     // if (currentFullState.gameState.gameOver?.isOver) { ... }
+
      console.log("[MainGame Init] 狀態驗證通過。");
 
     // 更新 UI (使用導入的函數)
@@ -197,7 +192,8 @@ function initMainGameScreen() {
     // 為選項按鈕添加事件監聽器
     ['A', 'B', 'C'].forEach(optionId => {
         const button = document.getElementById(`option${optionId}`);
-        if (button) {
+        // 確保按鈕存在且 currentEvent 存在才綁定（避免遊戲結束時出錯）
+        if (button && currentFullState.gameState.currentEvent) {
              button.addEventListener('click', async (event) => {
                  if (event.currentTarget.disabled) return;
 
@@ -210,6 +206,7 @@ function initMainGameScreen() {
                 try {
                     console.log("[Option Click] 開始前端計算...");
                     let gameStateForCalc = loadGameState(); // 使用導入的函數
+                    // 再次檢查狀態，以防萬一
                     if (!gameStateForCalc || !gameStateForCalc.gameState || !gameStateForCalc.gameState.currentEvent?.options) {
                         throw new Error("無法加載有效的遊戲狀態或事件選項來進行計算。");
                     }
@@ -231,20 +228,17 @@ function initMainGameScreen() {
                     };
                     state.lastChoiceResult = localLastChoiceResult;
 
-                    // 使用導入的遊戲邏輯函數
-                    state.resources = applyResourceChanges(state.resources, resourceChanges);
+                    state.resources = applyResourceChanges(state.resources, resourceChanges); // 使用導入的函數
 
                     const previousRound = state.roundNumber;
                     state.roundNumber = (state.roundNumber || 0) + 1;
                     console.log(`[Option Click] 回合數遞增至 ${state.roundNumber}`);
 
-                    // 使用導入的遊戲邏輯函數
-                    const gameOverCheck = checkGameOver(state.resources);
+                    const gameOverCheck = checkGameOver(state.resources); // 使用導入的函數
                     state.gameOver = {
                         isOver: gameOverCheck.isOver,
                         reason: gameOverCheck.reason,
-                        // 使用導入的遊戲邏輯函數
-                        endingText: gameOverCheck.isOver ? getGenericEndingText(gameOverCheck.reason) : null,
+                        endingText: gameOverCheck.isOver ? getGenericEndingText(gameOverCheck.reason) : null, // 使用導入的函數
                         finalRounds: gameOverCheck.isOver ? previousRound : null
                     };
                     console.log("[Option Click] 遊戲結束檢查結果:", state.gameOver);
@@ -252,22 +246,19 @@ function initMainGameScreen() {
                     console.log("[Option Click] 儲存中間狀態...");
                     saveGameState(gameStateForCalc); // 使用導入的函數
 
-                    // 如果遊戲已結束，直接導航
-                    if (state.gameOver.isOver) {
-                         console.log("[Option Click] 遊戲已結束 (前端計算)，導航到結束畫面。");
-                         navigateTo('game-over-screen.html');
-                         return;
-                    }
+                    // **移除**此處的遊戲結束跳轉判斷
+                    // if (state.gameOver.isOver) { ... return; }
 
-                    // --- 調用後端獲取文本 (遊戲未結束時) ---
+                    // --- 調用後端獲取文本 (即使遊戲結束也要獲取最後一次的 outcomeText) ---
                     console.log("[Option Click] 準備調用後端獲取 outcomeText 和 next event...");
                     const playerAction = { chosenOptionId: chosenOptionId };
                     const currentStateForBackend = {
                         roundNumber: state.roundNumber,
                         resources: state.resources
+                        // 可以考慮傳遞 isOver 狀態給後端，但 V5.4 指令未要求
                     };
                     let currentHistory = loadHistory(); // 使用導入的函數
-                    const historyToSend = currentHistory.slice(-(MAX_HISTORY_TURNS)); // 修正：應該是 MAX_HISTORY_TURNS
+                    const historyToSend = currentHistory.slice(-(MAX_HISTORY_TURNS)); // 使用導入的常數
 
                     const payload = { playerAction, currentState: currentStateForBackend, limitedHistory: historyToSend };
 
@@ -280,10 +271,12 @@ function initMainGameScreen() {
                     }
                     const aiResponseData = backendResponse.gameState;
 
+                    // **注意：如果遊戲結束，AI 可能不會返回 nextEventFromAI**
                     const outcomeTextFromAI = aiResponseData.lastChoiceResult?.outcomeText;
-                    const nextEventFromAI = aiResponseData.currentEvent;
+                    const nextEventFromAI = aiResponseData.currentEvent; // 可能為 null
 
-                     if (!nextEventFromAI || !nextEventFromAI.options || !nextEventFromAI.options.every(opt => opt && typeof opt.resourceChanges === 'object')) {
+                     // **驗證 AI 返回的下一事件 (僅在遊戲未結束時)**
+                     if (!state.gameOver.isOver && (!nextEventFromAI || !nextEventFromAI.options || !nextEventFromAI.options.every(opt => opt && typeof opt.resourceChanges === 'object'))) {
                          console.error("[Option Click] 後端返回的下一事件無效或缺少選項效果:", nextEventFromAI);
                          throw new Error("後端未能提供有效的下一回合事件數據。");
                      }
@@ -296,10 +289,18 @@ function initMainGameScreen() {
                     }
                     let finalState = finalGameState.gameState;
 
+                    // 更新 outcomeText
                     if (finalState.lastChoiceResult) {
                         finalState.lastChoiceResult.outcomeText = outcomeTextFromAI || "影響已產生。";
                     }
-                    finalState.currentEvent = nextEventFromAI;
+                    // 更新下一事件 (如果遊戲未結束)
+                    if (!finalState.gameOver.isOver) {
+                        finalState.currentEvent = nextEventFromAI;
+                    } else {
+                        // 如果遊戲已結束，保留前端生成的通用結局文本，並確保事件為 null
+                        finalState.currentEvent = null;
+                        // endingText 已在前端計算時設定
+                    }
 
 
                     console.log("[Option Click] 儲存最終狀態...");
@@ -307,16 +308,19 @@ function initMainGameScreen() {
 
                     console.log("[Option Click] 更新歷史記錄...");
                     const userTurnForHistory = { role: 'user', parts: [{ text: JSON.stringify(playerAction) }] };
+                    // 儲存 AI 的實際回應（可能不含 currentEvent）
                     const modelTurnForHistory = { role: 'model', parts: [{ text: JSON.stringify(backendResponse) }] };
                     currentHistory.push(userTurnForHistory);
                     currentHistory.push(modelTurnForHistory);
                     saveHistory(currentHistory); // 使用導入的函數
 
+                    // **修改：始終導航到 feedback 畫面**
                     console.log("[Option Click] 準備導航到 feedback...");
                     navigateTo('feedback-screen.html');
 
 
                 } catch (error) {
+                    // 使用導入的函數顯示錯誤
                     console.error("[Option Click] 處理選項點擊時發生嚴重錯誤 (v5.4):", error);
                     displayError(`處理您的選擇時發生錯誤：${error.message || '未知錯誤'}`);
                      document.querySelectorAll('.option-card').forEach(btn => {
@@ -335,20 +339,15 @@ function initMainGameScreen() {
 }
 
 /**
- * 初始化反饋畫面 (介面三)
+ * 初始化反饋畫面 (介面三) - 修正：繼續按鈕增加 Game Over 判斷
  */
 function initFeedbackScreen() {
     console.log("初始化反饋畫面 (v5.4 Refactored)...");
     const gameState = loadGameState(); // 使用導入的函數
 
     if (!gameState || !gameState.gameState) { navigateTo('index.html'); return; }
-    // 遊戲結束的判斷已在 main-game 點擊後完成，理論上 feedback 不會載入結束狀態
-    // 但為保險起見可以保留
-    if (gameState.gameState.gameOver?.isOver) {
-        console.warn("[Feedback Init] 檢測到遊戲已結束，重新導向到結束畫面。");
-        navigateTo('game-over-screen.html');
-        return;
-    }
+    // **不再需要檢查 gameOver，因為即使結束也要顯示反饋**
+    // if (gameState.gameState.gameOver?.isOver) { ... }
     if (!gameState.gameState.lastChoiceResult) { console.error("反饋畫面缺少 lastChoiceResult!"); navigateTo('index.html'); return; }
 
     const outcomeTextElement = document.getElementById('outcomeText');
@@ -363,7 +362,7 @@ function initFeedbackScreen() {
 
     // 使用導入的 UI 函數填充靜態內容並獲取文本
     const outcomeStringToType = populateFeedbackScreen(gameState);
-    if (outcomeStringToType === null) return; // populateFeedbackScreen 內部會處理錯誤導航
+    if (outcomeStringToType === null) return;
 
     // 初始化隱藏效果
     resourceChangesAreaElement.style.opacity = '0';
@@ -396,10 +395,20 @@ function initFeedbackScreen() {
     // 啟動打字機效果 (使用導入的函數)
     typewriterEffect(outcomeTextElement, outcomeStringToType, TYPEWRITER_SPEED, showFeedbackDetails); // 使用導入的常數
 
-    // 添加按鈕監聽器
+    // **修改：為繼續按鈕添加點擊事件監聽器，並加入 Game Over 判斷**
     continueButtonElement.addEventListener('click', () => {
         console.log("繼續按鈕被點擊 (v5.4)");
-        navigateTo('main-game.html'); // navigateTo 內部會處理 clearTypewriter
+        clearTypewriter(); // 使用導入的函數
+
+        // **讀取最終狀態並判斷是否遊戲結束**
+        const finalState = loadGameState(); // 使用導入的函數
+        if (finalState && finalState.gameState.gameOver?.isOver) {
+            console.log("[Feedback] 檢測到遊戲已結束，導航到結束畫面。");
+            navigateTo('game-over-screen.html'); // 使用導入的函數
+        } else {
+            console.log("[Feedback] 遊戲未結束，導航到主遊戲畫面。");
+            navigateTo('main-game.html'); // 使用導入的函數
+        }
     });
 
     console.log("反饋畫面初始化完畢。");
@@ -434,11 +443,10 @@ function initGameOverScreen() {
 
     // 使用導入的 UI 函數填充靜態內容並獲取文本
     const endingStringToType = populateGameOverScreen(gameState);
-    if (endingStringToType === null) return; // populateGameOverScreen 內部會處理錯誤導航
-    if (typeof endingStringToType !== 'string') { // 額外檢查
+    if (endingStringToType === null) return;
+    if (typeof endingStringToType !== 'string') {
         console.error("從 populateGameOverScreen 獲取的 ending text 不是字串:", endingStringToType);
         displayError("無法獲取結局描述文字。");
-        // 顯示按鈕讓玩家可以重來
         finalStatsElement.style.visibility = 'visible'; finalStatsElement.style.opacity = '1';
         playAgainButtonElement.style.visibility = 'visible'; playAgainButtonElement.style.opacity = '1';
         playAgainButtonElement.disabled = false;
