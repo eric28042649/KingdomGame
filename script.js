@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (path === 'feedback-screen.html') {
         initFeedbackScreen();
     } else if (path === 'game-over-screen.html') {
-        initGameOverScreen(); // 初始化 GameOver 畫面
+        initGameOverScreen();
     } else {
         console.warn("無法識別的頁面路徑:", window.location.pathname);
         navigateTo('index.html');
@@ -125,7 +125,6 @@ function setTextContent(id, text) {
     const element = document.getElementById(id);
     if (element) {
         element.textContent = text;
-        // console.log(`Set text for #${id}: ${text}`); // 增加日誌方便追蹤
     } else {
         console.warn(`setTextContent: 找不到 ID 為 "${id}" 的元素。`);
     }
@@ -134,21 +133,20 @@ function typewriterEffect(element, text, speed, callback) {
     if (typewriterInterval) {
         clearInterval(typewriterInterval);
         typewriterInterval = null;
-        console.log("Cleared previous typewriter interval."); // 日誌
+        console.log("Cleared previous typewriter interval.");
     }
-    if (!element) { // 增加對 element 的檢查
+    if (!element) {
         console.error("Typewriter effect called with null element.");
         return;
     }
-    if (typeof text !== 'string') { // 增加對 text 的檢查
+    if (typeof text !== 'string') {
         console.warn(`Typewriter effect called with non-string text: ${text}. Using empty string.`);
         text = '';
     }
     element.textContent = '';
     let i = 0;
-    console.log(`Starting typewriter for element #${element.id}, text length: ${text.length}`); // 日誌
+    console.log(`Starting typewriter for element #${element.id}, text length: ${text.length}`);
 
-    // 根據當前頁面禁用對應的按鈕
     if (document.body.querySelector('.game-container')) {
          document.querySelectorAll('.option-card').forEach(btn => btn.disabled = true);
     } else if (document.body.querySelector('.feedback-container')) {
@@ -159,7 +157,6 @@ function typewriterEffect(element, text, speed, callback) {
         if (playAgainBtn) playAgainBtn.disabled = true;
     }
 
-
     typewriterInterval = setInterval(() => {
         if (i < text.length) {
             element.textContent += text.charAt(i);
@@ -167,27 +164,25 @@ function typewriterEffect(element, text, speed, callback) {
         } else {
             clearInterval(typewriterInterval);
             typewriterInterval = null;
-            console.log(`Finished typewriter for element #${element.id}`); // 日誌
-            // Markdown 解析
+            console.log(`Finished typewriter for element #${element.id}`);
             if ((element.id === 'eventDescription' || element.id === 'outcomeText' || element.id === 'endingText') && typeof marked !== 'undefined' && marked.parse) {
                  try {
                      const originalText = element.textContent;
-                     console.log(`Parsing Markdown for #${element.id}`); // 日誌
+                     console.log(`Parsing Markdown for #${element.id}`);
                      element.innerHTML = marked.parse(originalText);
                  }
                  catch (e) { console.error("打字機效果後 Markdown 解析錯誤:", e); }
             }
-            // 執行回調
             if (callback) {
-                console.log(`Executing callback for #${element.id}`); // 日誌
-                try { // 包裹回調以捕獲其內部錯誤
+                console.log(`Executing callback for #${element.id}`);
+                try {
                     callback();
                 } catch(callbackError) {
                     console.error(`Error executing typewriter callback for #${element.id}:`, callbackError);
                     displayError(`顯示後續內容時發生錯誤: ${callbackError.message}`);
                 }
             } else {
-                console.log(`No callback provided for #${element.id}`); // 日誌
+                console.log(`No callback provided for #${element.id}`);
             }
         }
     }, speed);
@@ -196,7 +191,7 @@ function typewriterEffect(element, text, speed, callback) {
 
 // --- UI 更新函數 ---
 
-// (updateMainUI, populateFeedbackScreen 保持不變)
+// (updateMainUI, populateFeedbackScreen, populateGameOverScreen 保持不變)
 function updateMainUI(gameState) {
     if (!gameState || typeof gameState !== 'object' || !gameState.gameState) {
         console.error("updateMainUI 收到無效的 gameState", gameState);
@@ -321,12 +316,6 @@ function populateFeedbackScreen(gameState) {
 
     return outcomeString;
 }
-
-/**
- * 填充遊戲結束畫面的內容
- * @param {object} gameState - 包含遊戲結束狀態的物件
- * @returns {string | null} - 返回 endingText 的字串內容，如果無效則返回 null
- */
 function populateGameOverScreen(gameState) {
      if (!gameState || typeof gameState !== 'object' || !gameState.gameState?.gameOver?.isOver) {
         console.error("populateGameOverScreen 收到無效的 gameState 或遊戲未結束", gameState);
@@ -336,13 +325,11 @@ function populateGameOverScreen(gameState) {
     console.log("填充遊戲結束畫面靜態內容...");
 
     const endingString = gameOverState.endingText || '統治結束。';
-    // 檢查 endingText 是否為字串
     if (typeof endingString !== 'string') {
         console.error("Ending text is not a string:", endingString);
-        return '統治結束。'; // 返回預設值
+        return '統治結束。';
     }
 
-    // 設置最終回合數
     setTextContent('finalRounds', gameOverState.finalRounds ?? '--');
 
     return endingString;
@@ -351,29 +338,63 @@ function populateGameOverScreen(gameState) {
 
 // --- 頁面初始化函數 ---
 
-// (initStartScreen, initFeedbackScreen 保持不變)
+/**
+ * 初始化開始畫面 (介面一) - 修改：儲存初始歷史
+ */
 function initStartScreen() {
     console.log("初始化開始畫面 (v5)...");
     const startButton = document.getElementById('startGameButton');
-    if (!startButton) return;
+    if (!startButton) { console.error("找不到開始按鈕！"); return; }
+
+    // 清除舊的遊戲狀態和歷史記錄
     sessionStorage.removeItem(GAME_STATE_KEY);
     sessionStorage.removeItem(HISTORY_KEY);
     console.log("已清除舊的遊戲狀態和歷史。");
 
+    // 為開始按鈕添加點擊事件監聽器
     startButton.addEventListener('click', async () => {
         console.log("開始按鈕被點擊 (v5)");
-        startButton.disabled = true;
+        startButton.disabled = true; // 防止重複點擊
         try {
+            // 第一次調用後端，獲取初始遊戲狀態
             const initialGameState = await callBackend(null);
+
+            // 驗證收到的初始狀態
+            if (!initialGameState || !initialGameState.gameState) {
+                throw new Error("從後端獲取的初始遊戲狀態無效。");
+            }
+
+            // 儲存初始狀態物件
             saveGameState(initialGameState);
+
+            // **新增：將初始狀態作為模型的第一個回應存入歷史記錄**
+            try {
+                const initialModelTurn = {
+                    role: 'model',
+                    parts: [{ text: JSON.stringify(initialGameState) }] // 將整個初始狀態存儲
+                };
+                saveHistory([initialModelTurn]); // 儲存包含單個模型回應的歷史陣列
+                console.log("已將初始遊戲狀態存入歷史記錄。");
+            } catch (historyError) {
+                console.error("儲存初始歷史記錄時出錯:", historyError);
+                // 即使歷史儲存失敗，也嘗試繼續遊戲，但可能影響後續上下文
+                displayError("無法儲存初始遊戲歷史，可能影響後續遊戲。");
+            }
+
+            // 導航到主遊戲畫面
             navigateTo('main-game.html');
+
         } catch (error) {
+            // 處理開始遊戲時的錯誤
+            console.error("開始遊戲時發生錯誤:", error); // 詳細記錄錯誤
             displayError(`無法開始遊戲：${error.message || error}`);
-            startButton.disabled = false;
+            startButton.disabled = false; // 發生錯誤時重新啟用按鈕
         }
     });
     console.log("開始畫面初始化完畢。");
 }
+
+// (initFeedbackScreen, initGameOverScreen, initMainGameScreen 保持不變)
 function initFeedbackScreen() {
     console.log("初始化反饋畫面 (v5)...");
     const gameState = loadGameState();
@@ -404,26 +425,26 @@ function initFeedbackScreen() {
     continueButtonElement.disabled = true;
 
     const showFeedbackDetails = () => {
-        console.log("Callback: showFeedbackDetails executing."); // 日誌
+        console.log("Callback: showFeedbackDetails executing.");
         if (resourceChangesAreaElement) {
-            console.log("Showing resource changes area."); // 日誌
+            console.log("Showing resource changes area.");
             resourceChangesAreaElement.style.visibility = 'visible';
             setTimeout(() => {
                 resourceChangesAreaElement.style.opacity = '1';
                 resourceChangesAreaElement.style.transform = 'translateY(0px)';
             }, 10);
-        } else { console.warn("Callback: resourceChangesAreaElement not found."); } // 日誌
+        } else { console.warn("Callback: resourceChangesAreaElement not found."); }
 
         if (continueButtonElement) {
-             console.log("Setting timeout for continue button."); // 日誌
+             console.log("Setting timeout for continue button.");
              setTimeout(() => {
-                 console.log("Showing continue button."); // 日誌
+                 console.log("Showing continue button.");
                 continueButtonElement.style.visibility = 'visible';
                 continueButtonElement.style.opacity = '1';
                 continueButtonElement.style.transform = 'translateY(0px)';
                 continueButtonElement.disabled = false;
              }, FEEDBACK_REVEAL_DELAY);
-        } else { console.warn("Callback: continueButtonElement not found."); } // 日誌
+        } else { console.warn("Callback: continueButtonElement not found."); }
     };
 
     typewriterEffect(outcomeTextElement, outcomeStringToType, TYPEWRITER_SPEED, showFeedbackDetails);
@@ -439,31 +460,24 @@ function initFeedbackScreen() {
 
     console.log("反饋畫面初始化完畢。");
 }
-
-/**
- * 初始化遊戲結束畫面 (介面四) - 加入偵錯日誌
- */
 function initGameOverScreen() {
-    console.log("--- 初始化遊戲結束畫面 (v5) ---"); // 標示開始
+    console.log("--- 初始化遊戲結束畫面 (v5) ---");
     const gameState = loadGameState();
 
-     // 基本的狀態驗證
      if (!gameState || !gameState.gameState || !gameState.gameState.gameOver?.isOver) {
-        console.error("結束畫面：找不到有效狀態或遊戲未結束。GameState:", gameState); // 記錄狀態
+        console.error("結束畫面：找不到有效狀態或遊戲未結束。GameState:", gameState);
         sessionStorage.removeItem(GAME_STATE_KEY);
         sessionStorage.removeItem(HISTORY_KEY);
         navigateTo('index.html');
         return;
     }
-    console.log("有效的 Game Over 狀態:", JSON.stringify(gameState.gameState.gameOver, null, 2)); // 記錄 gameOver 狀態
+    console.log("有效的 Game Over 狀態:", JSON.stringify(gameState.gameState.gameOver, null, 2));
 
-    // 獲取元素
     console.log("正在獲取 GameOver 畫面元素...");
-    const endingTextElement = document.getElementById('endingText'); // p 元素
-    const finalStatsElement = document.querySelector('.final-stats'); // div 元素
+    const endingTextElement = document.getElementById('endingText');
+    const finalStatsElement = document.querySelector('.final-stats');
     const playAgainButtonElement = document.getElementById('playAgainButton');
 
-    // 確保元素存在
     if (!endingTextElement) console.error("找不到元素: #endingText");
     if (!finalStatsElement) console.error("找不到元素: .final-stats");
     if (!playAgainButtonElement) console.error("找不到元素: #playAgainButton");
@@ -475,30 +489,25 @@ function initGameOverScreen() {
     }
     console.log("所有 GameOver 畫面元素已找到。");
 
-    // 1. 先調用 populateGameOverScreen 填充靜態內容 (回合數) 並獲取 endingText
     console.log("正在調用 populateGameOverScreen...");
     const endingStringToType = populateGameOverScreen(gameState);
     console.log("populateGameOverScreen 返回的 endingStringToType:", endingStringToType);
 
-    // 如果 populateGameOverScreen 返回 null (表示狀態無效)，則停止執行
     if (endingStringToType === null) {
         console.error("populateGameOverScreen 返回 null，停止初始化。");
         return;
     }
-     // 再次檢查 endingStringToType 是否為字串
      if (typeof endingStringToType !== 'string') {
         console.error("從 populateGameOverScreen 獲取的 ending text 不是字串:", endingStringToType);
         displayError("無法獲取結局描述文字。");
-        // 即使文字有問題，也嘗試顯示按鈕讓玩家可以重來
-        finalStatsElement.style.visibility = 'visible'; // 直接顯示，不加動畫
+        finalStatsElement.style.visibility = 'visible';
         finalStatsElement.style.opacity = '1';
         playAgainButtonElement.style.visibility = 'visible';
         playAgainButtonElement.style.opacity = '1';
         playAgainButtonElement.disabled = false;
-        return; // 停止打字機
+        return;
     }
 
-    // 2. 初始化隱藏統計區和重新開始按鈕
     console.log("正在初始化隱藏統計區和按鈕...");
     finalStatsElement.style.opacity = '0';
     finalStatsElement.style.transform = 'translateY(10px)';
@@ -510,37 +519,32 @@ function initGameOverScreen() {
     playAgainButtonElement.disabled = true;
     console.log("統計區和按鈕已初始化為隱藏。");
 
-    // 3. 定義打字完成後的回調函數
     const showGameOverDetails = () => {
-        console.log("Callback: showGameOverDetails executing."); // 日誌
-        // 顯示最終統計
+        console.log("Callback: showGameOverDetails executing.");
         if (finalStatsElement) {
-            console.log("Showing final stats area."); // 日誌
+            console.log("Showing final stats area.");
             finalStatsElement.style.visibility = 'visible';
             setTimeout(() => {
                 finalStatsElement.style.opacity = '1';
                 finalStatsElement.style.transform = 'translateY(0px)';
             }, 10);
-        } else { console.warn("Callback: finalStatsElement not found."); } // 日誌
+        } else { console.warn("Callback: finalStatsElement not found."); }
 
-        // 顯示重新開始按鈕
         if (playAgainButtonElement) {
-             console.log("Setting timeout for play again button."); // 日誌
+             console.log("Setting timeout for play again button.");
              setTimeout(() => {
-                 console.log("Showing play again button."); // 日誌
+                 console.log("Showing play again button.");
                 playAgainButtonElement.style.visibility = 'visible';
                 playAgainButtonElement.style.opacity = '1';
                 playAgainButtonElement.style.transform = 'translateY(0px)';
                 playAgainButtonElement.disabled = false;
              }, GAMEOVER_REVEAL_DELAY);
-        } else { console.warn("Callback: playAgainButtonElement not found."); } // 日誌
+        } else { console.warn("Callback: playAgainButtonElement not found."); }
     };
 
-    // 4. 啟動打字機效果
     console.log("正在啟動 typewriterEffect for endingText...");
     typewriterEffect(endingTextElement, endingStringToType, TYPEWRITER_SPEED, showGameOverDetails);
 
-    // 5. 為重新開始按鈕添加事件監聽器
     playAgainButtonElement.addEventListener('click', () => {
         console.log("重新開始按鈕被點擊 (v5)");
         sessionStorage.removeItem(GAME_STATE_KEY);
@@ -548,11 +552,8 @@ function initGameOverScreen() {
         navigateTo('index.html');
     });
 
-    console.log("--- 遊戲結束畫面初始化完畢 ---"); // 標示結束
+    console.log("--- 遊戲結束畫面初始化完畢 ---");
 }
-
-
-// (initMainGameScreen 保持不變)
 function initMainGameScreen() {
     console.log("初始化主遊戲畫面 (v5)...");
     const gameState = loadGameState();
