@@ -1,79 +1,76 @@
 // js/main.js
-// 主入口文件，負責初始化、頁面路由和協調其他模組 (v5.7.6 Check Raw Save)
+// 主入口文件，負責初始化、頁面路由和協調其他模組 (v6.0 - Pre-generated Outcomes)
 
-// ... (導入部分保持不變) ...
-import {
-    INITIAL_RESOURCES, MAX_HISTORY_TURNS, TYPEWRITER_SPEED,
-    FEEDBACK_REVEAL_DELAY, GAMEOVER_REVEAL_DELAY, OPTION_REVEAL_DELAY,
-    GAME_STATE_KEY, HISTORY_KEY, NEXT_TURN_EVENT_KEY,
-    NEXT_TURN_CHECK_INTERVAL, NEXT_TURN_CHECK_TIMEOUT
-} from './config.js';
-import {
-    loadGameState, saveGameState, loadHistory, saveHistory,
-    saveNextTurnEvent, loadNextTurnEvent, clearNextTurnEvent
-} from './state.js';
+// 導入設定
+import { INITIAL_RESOURCES, MAX_HISTORY_TURNS, TYPEWRITER_SPEED, FEEDBACK_REVEAL_DELAY, GAMEOVER_REVEAL_DELAY, OPTION_REVEAL_DELAY, GAME_STATE_KEY, HISTORY_KEY } from './config.js';
+
+// 導入狀態管理
+import { loadGameState, saveGameState, loadHistory, saveHistory } from './state.js';
+
+// 導入 API 通訊
 import { callBackend } from './api.js';
+
+// 導入遊戲邏輯
 import { applyResourceChanges, checkGameOver, getGenericEndingText } from './game-logic.js';
+
+// 導入 UI 更新與效果
 import {
-    showLoading, updateLoadingText, typewriterEffect, clearTypewriter,
-    updateMainUI, populateFeedbackScreen, populateGameOverScreen
+    showLoading,
+    updateLoadingText,
+    typewriterEffect,
+    clearTypewriter,
+    updateMainUI,
+    populateFeedbackScreen,
+    populateGameOverScreen
 } from './ui.js';
 
-let isFetchingNextTurn = false;
-let nextTurnCheckTimer = null;
-let nextTurnCheckStartTime = 0;
-
-// --- DOMContentLoaded 事件監聽器 ---
+// --- DOMContentLoaded 事件監聽器 (頁面路由) ---
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname.split('/').pop();
-    console.log(`[DOMContentLoaded] Path: ${path || 'index.html'} (v5.7.6)`);
-    if (nextTurnCheckTimer) clearTimeout(nextTurnCheckTimer);
-    // ... (switch case 保持不變) ...
-     switch (path) {
-        case '': case 'index.html': case 'start-screen.html':
-            initStartScreen(); break;
+    console.log(`[DOMContentLoaded V6.0] Path: ${path || 'index.html'}`);
+    switch (path) {
+        case '':
+        case 'index.html':
+        case 'start-screen.html': // 兼容舊名稱
+            initStartScreen();
+            break;
         case 'main-game.html':
-            initMainGameScreen(); break;
+            initMainGameScreen();
+            break;
         case 'feedback-screen.html':
-            initFeedbackScreen(); break;
+            initFeedbackScreen();
+            break;
         case 'game-over-screen.html':
-            initGameOverScreen(); break;
+            initGameOverScreen();
+            break;
         default:
             console.warn("無法識別的頁面路徑:", window.location.pathname);
-            navigateTo('index.html');
+            navigateTo('index.html'); // 跳轉回首頁
     }
 });
 
 // --- 導航與錯誤處理 ---
 export function navigateTo(page) {
-    console.log(`[Navigate] 準備導航到: ${page} (v5.7.6)`);
+    console.log(`[Navigate V6.0] 準備導航到: ${page}`);
     clearTypewriter();
     showLoading(false);
-    if (nextTurnCheckTimer) clearTimeout(nextTurnCheckTimer);
-    isFetchingNextTurn = false;
     window.location.href = page;
 }
 
-export function displayError(message, navigateToIndex = false) {
-    console.error("遊戲錯誤 (v5.7.6):", message);
+export function displayError(message) {
+    console.error("遊戲錯誤 V6.0:", message);
     showLoading(false);
-    isFetchingNextTurn = false;
-    if (nextTurnCheckTimer) clearTimeout(nextTurnCheckTimer);
     alert(`發生錯誤：\n${message}`);
-    if (navigateToIndex) {
-        console.log("錯誤後導航至 index.html");
-        navigateTo('index.html');
-    }
 }
+
 
 // --- 頁面初始化函數 ---
 
 /**
- * 初始化開始畫面
+ * 初始化開始畫面 (介面一) - 修改第二次 API 呼叫
  */
 function initStartScreen() {
-    // ... (保持 V5.7.5 版本不變) ...
-     console.log("初始化開始畫面 (v5.7.6 Preload)...");
+    console.log("初始化開始畫面 (v6.0)...");
     const startButton = document.getElementById('startGameButton');
     const originalButtonText = startButton ? startButton.textContent : "開啟執政篇章";
 
@@ -81,13 +78,12 @@ function initStartScreen() {
 
     sessionStorage.removeItem(GAME_STATE_KEY);
     sessionStorage.removeItem(HISTORY_KEY);
-    sessionStorage.removeItem(NEXT_TURN_EVENT_KEY);
-    console.log("已清除所有遊戲狀態和歷史。");
+    console.log("已清除舊的遊戲狀態和歷史。");
     startButton.textContent = originalButtonText;
     startButton.disabled = false;
 
     startButton.addEventListener('click', async () => {
-        console.log("開始按鈕被點擊 (v5.7.6)");
+        console.log("開始按鈕被點擊 (v6.0)");
         startButton.disabled = true;
         updateLoadingText("正在生成王國...");
         showLoading(true);
@@ -95,276 +91,237 @@ function initStartScreen() {
         let kingdomBackground = null;
 
         try {
-            console.log("[StartGame] 請求背景...");
+            // --- 第一階段：請求生成王國背景 ---
+            console.log("[StartGame V6.0] 正在調用 callBackend({ requestType: 'generateBackground' })...");
             const backgroundResponse = await callBackend({ requestType: 'generateBackground' });
-            if (!backgroundResponse?.gameState?.kingdomBackground) { throw new Error("從後端獲取的王國背景無效。"); }
+            console.log("[StartGame V6.0] 收到背景回應:", backgroundResponse);
+
+            if (!backgroundResponse?.gameState?.kingdomBackground) {
+                throw new Error("從後端獲取的王國背景無效。");
+            }
             kingdomBackground = backgroundResponse.gameState.kingdomBackground;
-            console.log("[StartGame] 成功獲取王國背景。");
+            console.log("[StartGame V6.0] 成功獲取王國背景:", kingdomBackground);
             updateLoadingText("正在生成首個事件...");
 
-            console.log("[StartGame] 請求首個完整事件...");
-            const firstEventPayload = {
-                requestType: 'generateFirstFullEvent',
+            // --- 第二階段：請求生成第一個事件 (包含預生成結果) ---
+            console.log("[StartGame V6.0] 正在調用 callBackend({ requestType: 'generateFirstEvent', kingdomBackground })...");
+            const firstEventResponse = await callBackend({
+                requestType: 'generateFirstEvent', // <--- 使用新的請求類型或保持，但期望新格式
                 kingdomBackground: kingdomBackground,
-                currentState: { roundNumber: 1, resources: INITIAL_RESOURCES, kingdomBackground: kingdomBackground },
-                limitedHistory: []
-            };
-            const firstEventResponse = await callBackend(firstEventPayload);
-            console.log("[StartGame] 收到首個事件回應:", JSON.stringify(firstEventResponse, null, 2));
+                limitedHistory: [] // 初始歷史為空
+            });
+            console.log("[StartGame V6.0] 收到首個事件回應:", JSON.stringify(firstEventResponse, null, 2));
 
-            if (!firstEventResponse?.gameState?.currentEvent?.options ||
-                !firstEventResponse.gameState.currentEvent.options.every(opt => opt.id && opt.text && opt.resourceChanges && opt.outcomeText)) {
-                throw new Error("從後端獲取的初始事件數據結構不完整。");
+            // --- 驗證第一個事件 (包含選項內的 outcomeText) ---
+            if (!firstEventResponse?.gameState?.currentEvent) {
+                throw new Error("從後端獲取的初始遊戲狀態無效 (缺少 gameState 或 currentEvent)。");
             }
-            const initialEventData = firstEventResponse.gameState;
+            const initialEvent = firstEventResponse.gameState.currentEvent;
+             if (!initialEvent.description || !Array.isArray(initialEvent.options) || initialEvent.options.length === 0) {
+                  throw new Error("初始事件結構不完整 (缺少 description 或 options)。");
+             }
+             const optionsValid = initialEvent.options.every((opt, index) => {
+                 const isValid = opt && typeof opt.resourceChanges === 'object' && opt.resourceChanges !== null && typeof opt.outcomeText === 'string' && opt.outcomeText;
+                 if (!isValid) console.error(`[StartGame V6.0 Validation] 選項 ${index} (ID: ${opt?.id}) 結構無效或缺少 resourceChanges/outcomeText。`, opt);
+                 return isValid;
+             });
+             if (!optionsValid) {
+                  throw new Error("初始事件的部分選項缺少 resourceChanges 或 outcomeText 數據。");
+             }
+            console.log("[StartGame V6.0] 後端返回的 initial currentEvent 驗證通過。");
 
+            // --- 構建完整的初始 gameState ---
             const initialGameState = {
                 gameState: {
-                    roundNumber: 1, resources: { ...INITIAL_RESOURCES }, currentEvent: initialEventData.currentEvent,
-                    lastChoiceResult: null, gameOver: { isOver: false, reason: null, endingText: null, finalRounds: null },
-                    statusMessage: initialEventData.statusMessage || "您的統治開始了...", kingdomBackground: kingdomBackground
+                    roundNumber: 1,
+                    resources: { ...INITIAL_RESOURCES },
+                    currentEvent: initialEvent, // <--- 直接使用後端返回的帶結果的事件
+                    lastChoiceResult: null, // 初始為 null
+                    gameOver: { isOver: false, reason: null, endingText: null, finalRounds: null },
+                    statusMessage: firstEventResponse.gameState.statusMessage || "您的統治開始了...", // 使用後端返回的 statusMessage 或預設值
+                    kingdomBackground: kingdomBackground // 儲存王國背景
                 }
             };
-            console.log("[StartGame] 構建的完整 initialGameState:", JSON.stringify(initialGameState, null, 2));
+            console.log("[StartGame V6.0] 構建的完整 initialGameState:", JSON.stringify(initialGameState, null, 2));
 
             saveGameState(initialGameState);
-            saveHistory([]);
-            clearNextTurnEvent();
-
-            console.log("[StartGame] 準備導航到 main-game.html...");
+            saveHistory([]); // 初始歷史為空
+            console.log("[StartGame V6.0] 準備導航到 main-game.html...");
             navigateTo('main-game.html');
 
         } catch (error) {
-            console.error("[StartGame] 處理點擊時發生錯誤:", error);
-            displayError(`無法開始遊戲：${error.message || '未知錯誤'}`, false);
+            console.error("[StartGame V6.0] 處理點擊時發生錯誤:", error);
+            displayError(`無法開始遊戲：${error.message || '未知錯誤'}`);
             startButton.disabled = false;
             startButton.textContent = originalButtonText;
+            showLoading(false); // 確保錯誤時隱藏 loading
         }
+        // finally { showLoading(false); } // 已在錯誤處理和成功導航中處理
     });
-    console.log("開始畫面初始化完畢。");
+    console.log("開始畫面初始化完畢 (v6.0)。");
 }
 
+
 /**
- * 初始化主遊戲畫面
+ * 初始化主遊戲畫面 (介面二) - 修改選項點擊邏輯
  */
 function initMainGameScreen() {
-    // ... (保持 V5.7.5 版本不變) ...
-     console.log("--- 初始化主遊戲畫面 (v5.7.6 Preload) ---");
+    console.log("--- 初始化主遊戲畫面 (v6.0 - Pre-gen Outcomes) ---");
     const currentFullState = loadGameState();
 
-    if (!currentFullState?.gameState?.kingdomBackground) { console.error("[MainGame Init] 狀態無效：缺少 gameState 或 kingdomBackground。"); navigateTo('index.html'); return; }
-    if (!currentFullState.gameState.gameOver?.isOver && !currentFullState.gameState.currentEvent) { console.error("[MainGame Init] 狀態無效：遊戲未結束但缺少 currentEvent。"); navigateTo('index.html'); return; }
-    if (!currentFullState.gameState.resources) { console.error("[MainGame Init] 狀態無效：缺少 resources。"); navigateTo('index.html'); return; }
-    if (currentFullState.gameState.currentEvent && (!Array.isArray(currentFullState.gameState.currentEvent.options) || !currentFullState.gameState.currentEvent.options.every(opt => opt?.id && opt.text && opt.resourceChanges && opt.outcomeText))) {
-         console.error("[MainGame Init] 狀態無效：currentEvent.options 結構不完整。", currentFullState.gameState.currentEvent?.options);
-         navigateTo('index.html'); return;
-     }
-    console.log("[MainGame Init] 狀態驗證通過。");
+    console.log("[MainGame Init V6.0] 讀取的 currentFullState:", JSON.stringify(currentFullState, null, 2));
 
+    // --- 狀態驗證 (加入 outcomeText 檢查) ---
+    if (!currentFullState?.gameState) { console.error("[MainGame Init V6.0] 狀態無效：缺少 gameState。導航回首頁。"); sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return; }
+    const state = currentFullState.gameState;
+    if (!state.kingdomBackground) { console.error("[MainGame Init V6.0] 狀態無效：缺少 kingdomBackground。導航回首頁。"); sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return; }
+    if (!state.resources) { console.error("[MainGame Init V6.0] 狀態無效：缺少 resources。導航回首頁。"); sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return; }
+    // 如果遊戲未結束，currentEvent 必須有效且包含帶 outcomeText 的選項
+    if (!state.gameOver?.isOver) {
+        if (!state.currentEvent) { console.error("[MainGame Init V6.0] 狀態無效：遊戲未結束但缺少 currentEvent。導航回首頁。"); sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return; }
+        if (!Array.isArray(state.currentEvent.options) || state.currentEvent.options.length === 0) { console.error("[MainGame Init V6.0] 狀態無效：currentEvent.options 無效。導航回首頁。"); sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return; }
+        if (!state.currentEvent.options.every(opt => opt && typeof opt.resourceChanges === 'object' && typeof opt.outcomeText === 'string' && opt.outcomeText)) { console.error("[MainGame Init V6.0] 狀態無效：currentEvent.options 結構不完整或缺少 resourceChanges/outcomeText。導航回首頁。", state.currentEvent.options); sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return; }
+    }
+    console.log("[MainGame Init V6.0] 狀態驗證通過。");
+
+    // 更新 UI
     updateMainUI(currentFullState);
 
+    // --- 為選項按鈕添加事件監聽器 (核心修改) ---
     ['A', 'B', 'C'].forEach(optionId => {
         const button = document.getElementById(`option${optionId}`);
-        const optionData = currentFullState.gameState.currentEvent?.options?.find(opt => opt.id === optionId);
+        // 確保按鈕存在且 currentEvent 存在才綁定
+        if (button && state.currentEvent) {
+             button.addEventListener('click', async (event) => { // 改為 async 以防未來需要 await
+                 if (event.currentTarget.disabled) return; // 防止重複點擊
 
-        if (button && optionData) {
-             button.addEventListener('click', async (event) => {
-                 if (event.currentTarget.disabled) return;
                 const chosenOptionId = event.currentTarget.dataset.choice;
-                console.log(`選項 ${chosenOptionId} 被點擊 (v5.7.6)`);
-                document.querySelectorAll('.option-card').forEach(btn => btn.disabled = true);
+                console.log(`選項 ${chosenOptionId} 被點擊 (v6.0)`);
+
+                document.querySelectorAll('.option-card').forEach(btn => btn.disabled = true); // 禁用所有選項
+                // 不再需要 showLoading(true) 因為結果是即時的
 
                 try {
-                    console.log("[Option Click] 開始前端計算 (使用預存結果)...");
-                    let gameStateContainer = loadGameState();
-                    if (!gameStateContainer?.gameState?.currentEvent?.options) { throw new Error("無法加載有效狀態處理點擊。"); }
-                    let state = gameStateContainer.gameState;
-                    const chosenOption = state.currentEvent.options.find(opt => opt.id === chosenOptionId);
-                    if (!chosenOption?.outcomeText || typeof chosenOption.resourceChanges !== 'object') { throw new Error(`選項 ${chosenOptionId} 數據不完整。`); }
+                    // --- 前端處理 ---
+                    console.log("[Option Click V6.0] 開始前端處理...");
+                    let gameStateForProcessing = loadGameState(); // 獲取最新狀態
+                    if (!gameStateForProcessing?.gameState?.currentEvent?.options) { throw new Error("無法加載有效的遊戲狀態或事件選項來處理點擊。"); }
+                    let currentState = gameStateForProcessing.gameState;
+                    console.log("[Option Click V6.0] 處理前 state:", JSON.stringify(currentState, null, 2));
 
-                    const preloadedOutcomeText = chosenOption.outcomeText;
+                    // --- 查找被選中的選項數據 (包含預生成的結果) ---
+                    const chosenOption = currentState.currentEvent.options.find(opt => opt.id === chosenOptionId);
+                    if (!chosenOption || typeof chosenOption.resourceChanges !== 'object' || typeof chosenOption.outcomeText !== 'string') {
+                        throw new Error(`找不到選項 ${chosenOptionId} 的有效數據 (resourceChanges 或 outcomeText)。`);
+                    }
                     const resourceChanges = chosenOption.resourceChanges;
-                    console.log(`[Option Click] 選項 ${chosenOptionId} resourceChanges:`, resourceChanges);
-                    console.log(`[Option Click] 選項 ${chosenOptionId} 預存 outcomeText:`, preloadedOutcomeText);
+                    const outcomeText = chosenOption.outcomeText; // <--- 直接獲取預生成的結果文本
 
-                    state.resources = applyResourceChanges(state.resources, resourceChanges);
-                    const previousRound = state.roundNumber;
-                    state.roundNumber = (state.roundNumber || 0) + 1;
-                    const gameOverCheck = checkGameOver(state.resources);
-                    state.gameOver = { isOver: gameOverCheck.isOver, reason: gameOverCheck.reason, endingText: gameOverCheck.isOver ? getGenericEndingText(gameOverCheck.reason) : null, finalRounds: gameOverCheck.isOver ? previousRound : null };
-                    state.lastChoiceResult = { chosenOptionId: chosenOptionId, resourceChanges: resourceChanges, outcomeText: preloadedOutcomeText };
+                    console.log(`[Option Click V6.0] 選項 ${chosenOptionId} 的 resourceChanges:`, resourceChanges);
+                    console.log(`[Option Click V6.0] 選項 ${chosenOptionId} 的 outcomeText:`, outcomeText);
 
-                    console.log("[Option Click] 準備儲存更新後的主狀態...");
-                    console.log("[Option Click] Saving state:", JSON.stringify(gameStateContainer, null, 2));
-                    saveGameState(gameStateContainer);
+                    // --- 更新狀態 ---
+                    // 1. 記錄結果到 lastChoiceResult 以便 feedback 畫面使用
+                    currentState.lastChoiceResult = {
+                        chosenOptionId: chosenOptionId,
+                        resourceChanges: resourceChanges, // 實際應用的變化
+                        outcomeText: outcomeText         // 預生成的文本
+                    };
+                    // 2. 計算新資源
+                    currentState.resources = applyResourceChanges(currentState.resources, resourceChanges);
+                    // 3. 遞增回合數
+                    const previousRound = currentState.roundNumber;
+                    currentState.roundNumber = (currentState.roundNumber || 0) + 1;
+                    // 4. 檢查遊戲是否結束
+                    const gameOverCheck = checkGameOver(currentState.resources);
+                    currentState.gameOver = {
+                        isOver: gameOverCheck.isOver,
+                        reason: gameOverCheck.reason,
+                        // 結局文本由後端決定，但這裡可以用通用的
+                        endingText: gameOverCheck.isOver ? getGenericEndingText(gameOverCheck.reason) : null,
+                        finalRounds: gameOverCheck.isOver ? previousRound : null
+                    };
+                    // 5. 清除當前事件，因為已經處理完畢，等待 feedback 畫面結束後加載新事件
+                    // currentState.currentEvent = null; // 暫不清空，feedback 可能需要參考
 
-                    console.log("[Option Click] 觸發背景請求下一回合數據...");
-                    fetchAndStoreNextTurnData(chosenOptionId, state);
+                    console.log("[Option Click V6.0] 處理後 state:", JSON.stringify(currentState, null, 2));
+                    console.log("[Option Click V6.0] 儲存狀態...");
+                    saveGameState(gameStateForProcessing); // 儲存包含 lastChoiceResult 的狀態
 
-                    console.log("[Option Click] 準備導航到 feedback...");
+                    // --- 更新歷史記錄 ---
+                    console.log("[Option Click V6.0] 更新歷史記錄...");
+                    let currentHistory = loadHistory();
+                    // 記錄玩家的選擇和預生成的結果
+                    const userActionText = `玩家選擇了選項 ${chosenOptionId}。`;
+                    const outcomeForHistory = `結果：${outcomeText} (資源變化: ${JSON.stringify(resourceChanges)})`;
+                    currentHistory.push({ role: 'user', parts: [{ text: userActionText }] });
+                    currentHistory.push({ role: 'model', parts: [{ text: outcomeForHistory }] }); // 將前端處理的結果放入歷史
+                    saveHistory(currentHistory);
+
+
+                    // --- 導航到反饋畫面 ---
+                    console.log("[Option Click V6.0] 準備導航到 feedback...");
                     navigateTo('feedback-screen.html');
 
                 } catch (error) {
-                    console.error("[Option Click] 處理選項點擊時發生嚴重錯誤 (v5.7.6):", error);
-                    displayError(`處理您的選擇時發生錯誤：${error.message || '未知錯誤'}`, true);
+                    console.error("[Option Click V6.0] 處理選項點擊時發生嚴重錯誤:", error);
+                    displayError(`處理您的選擇時發生錯誤：${error.message || '未知錯誤'}`);
+                    // 恢復按鈕狀態 (可能需要重新讀取狀態)
+                    document.querySelectorAll('.option-card').forEach(btn => {
+                         const latestState = loadGameState();
+                         const optId = btn.dataset.choice;
+                         if (latestState?.gameState?.currentEvent?.options?.some(o => o.id === optId) && !latestState?.gameState?.gameOver?.isOver) {
+                             btn.disabled = false;
+                         } else {
+                             btn.disabled = true;
+                         }
+                     });
+                    // showLoading(false); // displayError 已處理
                 }
             });
         } else if (button) {
+             // 如果按鈕存在但 currentEvent 為空或遊戲結束，確保禁用
              button.disabled = true;
         }
     });
-    console.log("--- 主遊戲畫面初始化完畢 ---");
+    console.log("--- 主遊戲畫面初始化完畢 (v6.0) ---");
 }
 
 /**
- * 背景函數：請求並儲存下一回合的事件數據
- */
-async function fetchAndStoreNextTurnData(chosenOptionId, currentState) {
-    if (isFetchingNextTurn) {
-        console.log("[Background Fetch] 已经在請求，跳過。");
-        return;
-    }
-    isFetchingNextTurn = true;
-    console.log("[Background Fetch] 開始請求下一回合數據...");
-    let nextEventDataToSave = null;
-
-    try {
-        const playerAction = { chosenOptionId: chosenOptionId };
-        const stateForBackend = {
-            roundNumber: currentState.roundNumber,
-            resources: currentState.resources,
-            kingdomBackground: currentState.kingdomBackground
-        };
-        if (!stateForBackend.kingdomBackground) {
-             const freshState = loadGameState();
-             stateForBackend.kingdomBackground = freshState?.gameState?.kingdomBackground;
-             if (!stateForBackend.kingdomBackground) throw new Error("無法獲取有效的 kingdomBackground。");
-        }
-
-        let currentHistory = loadHistory();
-        const historyToSend = currentHistory.slice(-MAX_HISTORY_TURNS * 2);
-
-        const payload = {
-            requestType: 'processChoiceAndPrepareNext',
-            playerAction: playerAction,
-            currentState: stateForBackend,
-            limitedHistory: historyToSend
-        };
-
-        const backendResponse = await callBackend(payload, true);
-        console.log("[Background Fetch] 收到後端回應:", backendResponse);
-
-        if (!backendResponse?.nextTurnEvent?.options ||
-            !backendResponse.nextTurnEvent.options.every(opt => opt.id && opt.text && opt.resourceChanges && opt.outcomeText)) {
-            console.error("[Background Fetch] 後端返回的 nextTurnEvent 數據結構不完整:", backendResponse?.nextTurnEvent);
-            throw new Error("後端返回的 nextTurnEvent 數據結構不完整。");
-        }
-
-        nextEventDataToSave = backendResponse.nextTurnEvent;
-        console.log("**********************************************");
-        console.log("[Background Fetch] 準備儲存 nextTurnEvent:", JSON.stringify(nextEventDataToSave, null, 2));
-        console.log("**********************************************");
-
-        saveNextTurnEvent(nextEventDataToSave); // 嘗試儲存
-
-        console.log("[Background Fetch] saveNextTurnEvent 調用完成。");
-
-        // --- 新增：檢查儲存後的原始字串 ---
-        const rawSavedString = sessionStorage.getItem(NEXT_TURN_EVENT_KEY);
-        console.log("##############################################");
-        console.log("[Background Fetch] 儲存後 sessionStorage.getItem 返回的原始字串:", rawSavedString);
-        console.log("##############################################");
-        if (rawSavedString === null || rawSavedString === undefined) {
-             console.error("[Background Fetch] 嚴重錯誤：儲存後 sessionStorage.getItem 返回 null 或 undefined！儲存操作可能靜默失敗！");
-             // 可以考慮拋出錯誤，以便 catch 區塊能記錄
-             throw new Error("sessionStorage.setItem 可能靜默失敗，未能儲存 nextTurnEvent。");
-        } else {
-             try {
-                 // 嘗試解析剛讀取的字串，確保它是有效的 JSON
-                 JSON.parse(rawSavedString);
-                 console.log("[Background Fetch] 儲存後讀取的原始字串是有效的 JSON。");
-             } catch (parseError) {
-                 console.error("[Background Fetch] 嚴重錯誤：儲存後讀取的原始字串不是有效的 JSON！", parseError);
-                 throw new Error(`儲存的 nextTurnEvent 字串無效: ${parseError.message}`);
-             }
-        }
-        // --- 新增結束 ---
-
-
-        // 可選：更新當前回合 outcomeText
-        if (backendResponse.currentChoiceOutcome?.outcomeText) {
-            // ... (邏輯不變) ...
-             console.log("[Background Fetch] 收到精確 outcomeText，嘗試更新...");
-            let currentGameStateContainer = loadGameState();
-            if (currentGameStateContainer?.gameState?.lastChoiceResult?.chosenOptionId === chosenOptionId) {
-                currentGameStateContainer.gameState.lastChoiceResult.outcomeText = backendResponse.currentChoiceOutcome.outcomeText;
-                saveGameState(currentGameStateContainer);
-                console.log("[Background Fetch] 已更新主狀態中的 lastChoiceResult.outcomeText。");
-            }
-        }
-         // 更新歷史記錄
-         const modelTurnForHistory = { role: 'model', parts: [{ text: JSON.stringify(backendResponse) }] };
-         currentHistory.push({ role: 'user', parts: [{ text: JSON.stringify(playerAction) }] });
-         currentHistory.push(modelTurnForHistory);
-         saveHistory(currentHistory);
-
-    } catch (error) {
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        console.error("[Background Fetch] 獲取或儲存下一回合數據時發生錯誤:", error); // 保持詳細錯誤輸出
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        clearNextTurnEvent();
-    } finally {
-        isFetchingNextTurn = false;
-        console.log("[Background Fetch] 請求處理完成。");
-    }
-}
-
-
-/**
- * 初始化反饋畫面 - 保持調試邏輯
+ * 初始化反饋畫面 (介面三) - 修改繼續按鈕邏輯
  */
 function initFeedbackScreen() {
-    // ... (保持 V5.7.5 Debug Jump 版本不變, 驗證失敗時 displayError(msg, false)) ...
-     console.log("初始化反饋畫面 (v5.7.6 Debug Jump)...");
-    const gameStateContainer = loadGameState();
+    console.log("初始化反饋畫面 (v6.0 - Pre-gen Outcomes)...");
+    const currentFullState = loadGameState();
 
-    if (!gameStateContainer?.gameState) {
-        console.error("[Feedback Init] 無法加載有效的 gameState。");
-        displayError("無法加載有效的 gameState。", false); return;
+    if (!currentFullState?.gameState) { navigateTo('index.html'); return; }
+    const state = currentFullState.gameState;
+
+    // 驗證 lastChoiceResult 是否存在且包含必要信息
+    if (!state.lastChoiceResult || typeof state.lastChoiceResult !== 'object' || !state.lastChoiceResult.chosenOptionId || typeof state.lastChoiceResult.resourceChanges !== 'object' || typeof state.lastChoiceResult.outcomeText !== 'string') {
+        console.error("反饋畫面缺少有效 lastChoiceResult (v6.0)!", state.lastChoiceResult);
+        navigateTo('index.html'); // 或導航回 main-game?
+        return;
     }
-    const state = gameStateContainer.gameState;
-    if (!state.lastChoiceResult) {
-        console.error("[Feedback Init] 狀態無效：缺少 lastChoiceResult!");
-        displayError("狀態無效：缺少 lastChoiceResult!", false); return;
-    }
-     if (typeof state.lastChoiceResult.chosenOptionId !== 'string' ||
-         typeof state.lastChoiceResult.outcomeText !== 'string' ||
-         typeof state.lastChoiceResult.resourceChanges !== 'object' ||
-         state.lastChoiceResult.resourceChanges === null) {
-         console.error("[Feedback Init] 狀態無效：lastChoiceResult 結構不完整!", state.lastChoiceResult);
-         displayError("狀態無效：lastChoiceResult 結構不完整! " + JSON.stringify(state.lastChoiceResult), false); return;
-     }
-    console.log("[Feedback Init] 加載的 gameState.lastChoiceResult:", state.lastChoiceResult);
 
     const outcomeTextElement = document.getElementById('outcomeText');
     const resourceChangesAreaElement = document.getElementById('resourceChangesArea');
     const continueButtonElement = document.getElementById('continueButton');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const loadingTextElement = loadingIndicator ? loadingIndicator.querySelector('p') : null;
 
-    if (!outcomeTextElement || !resourceChangesAreaElement || !continueButtonElement || !loadingIndicator || !loadingTextElement) {
-        console.error("Feedback 畫面缺少必要的 UI 元素！");
-        displayError("Feedback 畫面缺少必要的 UI 元素！", true); return;
+    if (!outcomeTextElement || !resourceChangesAreaElement || !continueButtonElement) {
+        console.error("Feedback 畫面缺少必要的 UI 元素！"); navigateTo('index.html'); return;
     }
 
-    const outcomeStringToType = populateFeedbackScreen(gameStateContainer);
-    if (outcomeStringToType === null) { return; };
+    // --- 使用 UI 函數填充內容 ---
+    const outcomeStringToType = populateFeedbackScreen(currentFullState); // populateFeedbackScreen 現在會從 lastChoiceResult 取 outcomeText
+    if (outcomeStringToType === null) return; // populateFeedbackScreen 內部會處理錯誤導航
 
+    // 初始化隱藏效果
     resourceChangesAreaElement.style.opacity = '0'; resourceChangesAreaElement.style.transform = 'translateY(10px)'; resourceChangesAreaElement.style.visibility = 'hidden';
     continueButtonElement.style.opacity = '0'; continueButtonElement.style.transform = 'translateY(10px)'; continueButtonElement.style.visibility = 'hidden';
     continueButtonElement.disabled = true;
-    loadingIndicator.style.display = 'none';
 
+    // 打字完成後的回調
     const showFeedbackDetails = () => {
         if (resourceChangesAreaElement) {
             resourceChangesAreaElement.style.visibility = 'visible';
@@ -373,128 +330,123 @@ function initFeedbackScreen() {
                 resourceChangesAreaElement.style.transform = 'translateY(0px)';
             }, 10);
         }
-        checkAndEnableContinueButton();
+        if (continueButtonElement) {
+             setTimeout(() => {
+                continueButtonElement.style.visibility = 'visible';
+                continueButtonElement.style.opacity = '1';
+                continueButtonElement.style.transform = 'translateY(0px)';
+                continueButtonElement.disabled = false; // 啟用按鈕
+             }, FEEDBACK_REVEAL_DELAY);
+        }
     };
 
+    // 啟動打字機效果
     typewriterEffect(outcomeTextElement, outcomeStringToType, TYPEWRITER_SPEED, showFeedbackDetails);
 
-    function checkAndEnableContinueButton() {
-        const nextEvent = loadNextTurnEvent();
-        console.log("[Feedback Check] loadNextTurnEvent 返回:", nextEvent ? '有效數據' : 'null');
+    // --- 為繼續按鈕添加點擊事件監聽器 (核心修改) ---
+    continueButtonElement.addEventListener('click', async () => { // 改為 async
+        if (continueButtonElement.disabled) return; // 防止重複點擊
 
-        if (nextEvent) {
-            console.log("[Feedback] 下一回合數據已就緒，啟用繼續按鈕。");
-             if (continueButtonElement) {
-                 continueButtonElement.style.visibility = 'visible';
-                 continueButtonElement.style.opacity = '1';
-                 continueButtonElement.style.transform = 'translateY(0px)';
-                 continueButtonElement.disabled = false;
-             }
-             if (loadingIndicator) loadingIndicator.style.display = 'none';
-             if (nextTurnCheckTimer) { clearTimeout(nextTurnCheckTimer); nextTurnCheckTimer = null; }
-        } else if (!isFetchingNextTurn) {
-             console.warn("[Feedback] 背景請求已結束，但下一回合數據無效或未成功保存。");
-             displayError("無法加載下一回合數據，請查看控制台錯誤日誌或嘗試重新開始遊戲。", false); // 保持不跳轉
-             if (continueButtonElement) continueButtonElement.disabled = true;
-             if (loadingIndicator) loadingIndicator.style.display = 'none';
-             if (nextTurnCheckTimer) { clearTimeout(nextTurnCheckTimer); nextTurnCheckTimer = null; }
-        } else {
-             console.log("[Feedback] 下一回合數據未就緒，顯示等待提示...");
-             if (loadingIndicator && loadingTextElement) {
-                 loadingTextElement.textContent = "正在準備下一回合...";
-                 loadingIndicator.style.display = 'flex';
-             }
-             if (!nextTurnCheckTimer) {
-                 nextTurnCheckStartTime = Date.now();
-                 console.log("[Feedback] 啟動檢查計時器...");
-                 nextTurnCheckTimer = setTimeout(checkLoop, NEXT_TURN_CHECK_INTERVAL);
-             }
+        console.log("繼續按鈕被點擊 (v6.0)");
+        clearTypewriter();
+        continueButtonElement.disabled = true; // 禁用按鈕
+
+        const currentStateBeforeBackendCall = loadGameState(); // 獲取最新狀態
+        if (!currentStateBeforeBackendCall?.gameState) {
+            displayError("無法加載當前狀態以繼續遊戲。");
+            navigateTo('index.html');
+            return;
         }
-    }
+        const finalState = currentStateBeforeBackendCall.gameState;
 
-    function checkLoop() {
-        console.log("[Feedback CheckLoop] 檢查...");
-        const nextEvent = loadNextTurnEvent();
-        console.log("[Feedback CheckLoop] loadNextTurnEvent 返回:", nextEvent ? '有效數據' : 'null');
-
-        if (nextEvent) {
-            console.log("[Feedback CheckLoop] 數據已找到！");
-            checkAndEnableContinueButton();
-        } else if (Date.now() - nextTurnCheckStartTime > NEXT_TURN_CHECK_TIMEOUT) {
-             console.error("[Feedback CheckLoop] 檢查超時！");
-             displayError("加載下一回合數據超時，請檢查網路或重新開始。", false); // 保持不跳轉
-             if (loadingIndicator) loadingIndicator.style.display = 'none';
-             if (continueButtonElement) continueButtonElement.disabled = true;
-             nextTurnCheckTimer = null;
-        } else if (!isFetchingNextTurn) {
-             console.warn("[Feedback CheckLoop] 背景請求已結束但數據仍無效。");
-             checkAndEnableContinueButton(); // 會觸發 displayError (不跳轉)
-        } else {
-             nextTurnCheckTimer = setTimeout(checkLoop, NEXT_TURN_CHECK_INTERVAL);
-        }
-    }
-
-    continueButtonElement.addEventListener('click', () => {
-        // ... (保持 V5.7.5 Debug Jump 版本不變, 失敗時 displayError(msg, false)) ...
-         console.log("繼續按鈕被點擊 (v5.7.6)");
-        if (continueButtonElement.disabled) return;
-        continueButtonElement.disabled = true;
-
-        const currentStateContainer = loadGameState();
-        if (currentStateContainer?.gameState.gameOver?.isOver) {
-            console.log("[Feedback] 檢測到遊戲已結束，導航到結束畫面。");
-            clearNextTurnEvent();
+        // --- 檢查遊戲是否結束 ---
+        if (finalState.gameOver?.isOver) {
+            console.log("[Feedback V6.0] 檢測到遊戲已結束，導航到結束畫面。");
             navigateTo('game-over-screen.html');
-            return;
-        }
+        } else {
+            // --- 遊戲未結束，呼叫後端獲取下一回合事件 ---
+            console.log("[Feedback V6.0] 遊戲未結束，準備呼叫後端獲取下一回合事件...");
+            updateLoadingText("正在生成下回合事件..."); // <<<< 更新載入文字
+            showLoading(true); // <<<< 顯示載入畫面
 
-        const nextEvent = loadNextTurnEvent();
-        if (!nextEvent) {
-            console.error("[Feedback Continue] 點擊繼續時，下一回合數據無效！");
-            displayError("無法加載下一回合數據，請稍後再試。", false); // 保持不跳轉
-            continueButtonElement.disabled = false;
-            return;
-        }
+            try {
+                const lastPlayerAction = { chosenOptionId: finalState.lastChoiceResult.chosenOptionId };
+                const currentStateForBackend = {
+                    roundNumber: finalState.roundNumber, // 這是下一回合的編號
+                    resources: finalState.resources,   // 這是計算後的資源
+                    // kingdomBackground is needed by worker
+                };
+                let currentHistory = loadHistory();
+                const historyToSend = currentHistory.slice(-MAX_HISTORY_TURNS);
 
-        try {
-            console.log("[Feedback Continue] 加載並應用下一回合數據...");
-            if (!currentStateContainer) throw new Error("無法加載當前主狀態以應用下一回合數據。");
-            let state = currentStateContainer.gameState;
+                const payload = {
+                    requestType: 'generateNextEvent', // <--- 新的請求類型
+                    lastPlayerAction: lastPlayerAction,
+                    currentState: currentStateForBackend,
+                    kingdomBackground: finalState.kingdomBackground, // <--- 必須傳遞背景
+                    limitedHistory: historyToSend
+                };
 
-            state.currentEvent = nextEvent;
-            state.statusMessage = "請做出您的選擇."; // TODO: statusMessage 來源
+                const backendResponse = await callBackend(payload); // callBackend 內部會 showLoading(true)
+                console.log("[Feedback V6.0] 收到下一事件回應:", JSON.stringify(backendResponse, null, 2));
 
-            console.log("[Feedback Continue] 儲存包含新事件的主狀態...");
-            saveGameState(currentStateContainer);
+                // --- 驗證後端回應 (下一事件) ---
+                if (!backendResponse?.gameState?.currentEvent) {
+                    throw new Error("後端未返回有效的下一事件數據 (缺少 gameState 或 currentEvent)。");
+                }
+                const nextEvent = backendResponse.gameState.currentEvent;
+                if (!nextEvent.description || !Array.isArray(nextEvent.options) || nextEvent.options.length === 0 ||
+                    !nextEvent.options.every(opt => opt && typeof opt.resourceChanges === 'object' && typeof opt.outcomeText === 'string')) {
+                     throw new Error("後端返回的下一事件結構無效或缺少必要數據 (description, options, resourceChanges, outcomeText)。");
+                 }
+                 console.log("[Feedback V6.0] 後端返回的 nextEvent 驗證通過。");
 
-            clearNextTurnEvent();
+                // --- 更新遊戲狀態 ---
+                finalState.currentEvent = nextEvent; // <--- 存儲下一回合的事件
+                 // 可選：更新 statusMessage
+                 if (backendResponse.gameState.statusMessage) {
+                     finalState.statusMessage = backendResponse.gameState.statusMessage;
+                 } else {
+                     finalState.statusMessage = "新的挑戰出現了..."; // 預設提示
+                 }
+                // 清除上回合結果，因為已經進入新回合
+                // finalState.lastChoiceResult = null; // 暫不清空，若 history 需要參考
 
-            console.log("[Feedback Continue] 導航到主遊戲畫面...");
-            navigateTo('main-game.html');
+                console.log("[Feedback V6.0] 儲存包含下一事件的狀態...");
+                saveGameState(currentStateBeforeBackendCall); // 儲存更新後的完整狀態
 
-        } catch (error) {
-             console.error("[Feedback Continue] 應用下一回合數據時出錯:", error);
-             displayError(`處理下一回合數據時發生錯誤: ${error.message}`, true); // 跳轉回 index
+                // --- 更新歷史記錄 (AI 回應) ---
+                // 可以在這裡記錄 AI 生成的下一事件，但可能使歷史過於冗長
+                 console.log("[Feedback V6.0] 歷史記錄已在選項點擊時更新，此處不重複記錄 AI 回應。");
+
+                // --- 導航到主遊戲畫面 ---
+                console.log("[Feedback V6.0] 準備導航到 main-game.html...");
+                navigateTo('main-game.html'); // navigateTo 會隱藏 loading
+
+            } catch (error) {
+                console.error("[Feedback V6.0] 獲取下一事件時發生錯誤:", error);
+                displayError(`無法獲取下一回合的事件：${error.message || '未知錯誤'}`);
+                continueButtonElement.disabled = false; // 重新啟用按鈕
+                showLoading(false); // 確保錯誤時隱藏 loading
+            }
+            // finally { showLoading(false); } // 成功導航會隱藏，錯誤處理會隱藏
         }
     });
 
-    console.log("反饋畫面初始化完畢。");
+    console.log("反饋畫面初始化完畢 (v6.0)。");
 }
 
 
 /**
- * 初始化遊戲結束畫面
+ * 初始化遊戲結束畫面 (介面四) - 無需大改
  */
 function initGameOverScreen() {
-    // ... (保持 V5.7.5 版本不變) ...
-     console.log("--- 初始化遊戲結束畫面 (v5.7.6 Preload) ---");
-    clearNextTurnEvent();
-
+    console.log("--- 初始化遊戲結束畫面 (v6.0) ---");
     const gameState = loadGameState();
 
      if (!gameState?.gameState?.gameOver?.isOver) {
-        console.error("結束畫面：找不到有效狀態或遊戲未結束。");
-        navigateTo('index.html'); return;
+        console.error("結束畫面：找不到有效狀態或遊戲未結束。GameState:", gameState);
+        sessionStorage.removeItem(GAME_STATE_KEY); sessionStorage.removeItem(HISTORY_KEY); navigateTo('index.html'); return;
     }
     console.log("有效的 Game Over 狀態:", JSON.stringify(gameState.gameState.gameOver, null, 2));
 
@@ -502,23 +454,38 @@ function initGameOverScreen() {
     const finalStatsElement = document.querySelector('.final-stats');
     const playAgainButtonElement = document.getElementById('playAgainButton');
 
-    if (!endingTextElement || !finalStatsElement || !playAgainButtonElement) { console.error("GameOver 畫面缺少必要的 UI 元素！"); navigateTo('index.html'); return; }
+    if (!endingTextElement || !finalStatsElement || !playAgainButtonElement) { console.error("GameOver 畫面缺少必要的 UI 元素！導航回首頁。"); navigateTo('index.html'); return; }
+    console.log("所有 GameOver 畫面元素已找到。");
 
-    const endingStringToType = populateGameOverScreen(gameState);
+    // --- 使用 UI 函數填充內容 ---
+    // 確保 endingText 是後端生成的或 fallback
+    let endingTextFromState = gameState.gameState.gameOver.endingText;
+    if (!endingTextFromState && gameState.gameState.gameOver.reason) {
+        console.warn("Game Over state missing endingText, generating generic one.");
+        endingTextFromState = getGenericEndingText(gameState.gameState.gameOver.reason);
+    } else if (!endingTextFromState) {
+        endingTextFromState = "您的統治走到了終點...";
+    }
+    gameState.gameState.gameOver.endingText = endingTextFromState; // 確保 state 中有文本
+
+    const endingStringToType = populateGameOverScreen(gameState); // 內部會從 gameState.gameOver.endingText 讀取
     if (endingStringToType === null) return;
+
     if (typeof endingStringToType !== 'string') {
-        console.error("Ending text 不是字串:", endingStringToType);
-        displayError("無法獲取結局描述文字。", false);
+        console.error("從 populateGameOverScreen 獲取的 ending text 不是字串:", endingStringToType);
+        displayError("無法獲取結局描述文字。");
         finalStatsElement.style.visibility = 'visible'; finalStatsElement.style.opacity = '1';
         playAgainButtonElement.style.visibility = 'visible'; playAgainButtonElement.style.opacity = '1';
         playAgainButtonElement.disabled = false;
         return;
     }
 
+    // 初始化隱藏效果
     finalStatsElement.style.opacity = '0'; finalStatsElement.style.transform = 'translateY(10px)'; finalStatsElement.style.visibility = 'hidden';
     playAgainButtonElement.style.opacity = '0'; playAgainButtonElement.style.transform = 'translateY(10px)'; playAgainButtonElement.style.visibility = 'hidden';
     playAgainButtonElement.disabled = true;
 
+    // 打字完成後的回調
     const showGameOverDetails = () => {
         if (finalStatsElement) {
             finalStatsElement.style.visibility = 'visible';
@@ -534,15 +501,16 @@ function initGameOverScreen() {
         }
     };
 
+    // 啟動打字機效果
     typewriterEffect(endingTextElement, endingStringToType, TYPEWRITER_SPEED, showGameOverDetails);
 
+    // 添加按鈕監聽器
     playAgainButtonElement.addEventListener('click', () => {
-        console.log("重新開始按鈕被點擊 (v5.7.6)");
+        console.log("重新開始按鈕被點擊 (v6.0)");
         sessionStorage.removeItem(GAME_STATE_KEY);
         sessionStorage.removeItem(HISTORY_KEY);
-        sessionStorage.removeItem(NEXT_TURN_EVENT_KEY);
         navigateTo('index.html');
     });
 
-    console.log("--- 遊戲結束畫面初始化完畢 ---");
+    console.log("--- 遊戲結束畫面初始化完畢 (v6.0) ---");
 }

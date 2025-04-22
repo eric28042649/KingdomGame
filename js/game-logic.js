@@ -90,4 +90,3 @@ export function getGenericEndingText(reason) {
             return "您的統治走到了終點...";
     }
 }
-
