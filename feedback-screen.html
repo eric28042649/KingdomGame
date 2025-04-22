@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>回合結果 - 王國沉浮錄</title>
-    <link rel="stylesheet" href="style.css"> </head>
+    <link rel="stylesheet" href="style.css">
+    </head>
 <body>
     <div class="feedback-container">
         <div class="feedback-card card">
             <h2 id="feedbackTitle" class="feedback-title">回合結果</h2>
 
             <div id="outcomeArea">
-                <p id="outcomeText">您的決策產生了以下影響...</p> </div>
+                <p id="outcomeText">您的決策產生了以下影響...</p>
+            </div>
 
             <div id="resourceChangesArea" class="resource-changes">
                 <h3>資源變動：</h3>
@@ -31,10 +33,15 @@
             </div>
 
             <button id="continueButton" class="continue-button">
-                繼續 (<span id="nextRoundNumber">下一回合</span>) </button>
+                繼續 (<span id="nextRoundNumber">下一回合</span>)
+            </button>
+
+            <div id="loadingIndicator" class="loading-overlay" style="display: none;">
+                <div class="spinner"></div>
+                <p>正在準備下一回合...</p> </div>
+
         </div>
     </div>
     <script src="js/main.js" type="module"></script>
-    </body>
-    <!-- <script src="script.js"></script> -->
+</body>
 </html>
