@@ -188,102 +188,100 @@ function initMainGameScreen() {
     updateMainUI(currentFullState);
 
     // --- 為選項按鈕添加事件監聽器 (核心修改) ---
+    // 在 initMainGameScreen 函數內...
+    // --- 為選項按鈕添加事件監聽器 (核心修改) ---
     ['A', 'B', 'C'].forEach(optionId => {
         const button = document.getElementById(`option${optionId}`);
-        // 確保按鈕存在且 currentEvent 存在才綁定
+        // 確保按鈕存在且 state.currentEvent 存在才綁定 (state 是從 currentFullState 解構出來的)
         if (button && state.currentEvent) {
-             button.addEventListener('click', async (event) => { // 改為 async 以防未來需要 await
-                 if (event.currentTarget.disabled) return; // 防止重複點擊
+            button.addEventListener('click', async (event) => {
+                if (event.currentTarget.disabled) return;
 
                 const chosenOptionId = event.currentTarget.dataset.choice;
-                console.log(`選項 ${chosenOptionId} 被點擊 (v6.0)`);
+                console.log(`選項 ${chosenOptionId} 被點擊 (v6.1 - History with Desc)`);
 
-                document.querySelectorAll('.option-card').forEach(btn => btn.disabled = true); // 禁用所有選項
-                // 不再需要 showLoading(true) 因為結果是即時的
+                document.querySelectorAll('.option-card').forEach(btn => btn.disabled = true);
 
                 try {
                     // --- 前端處理 ---
-                    console.log("[Option Click V6.0] 開始前端處理...");
-                    let gameStateForProcessing = loadGameState(); // 獲取最新狀態
+                    console.log("[Option Click V6.1] 開始前端處理...");
+                    let gameStateForProcessing = loadGameState();
                     if (!gameStateForProcessing?.gameState?.currentEvent?.options) { throw new Error("無法加載有效的遊戲狀態或事件選項來處理點擊。"); }
-                    let currentState = gameStateForProcessing.gameState;
-                    console.log("[Option Click V6.0] 處理前 state:", JSON.stringify(currentState, null, 2));
+                    let currentState = gameStateForProcessing.gameState; // 使用 let 以便後續修改
+                    console.log("[Option Click V6.1] 處理前 state:", JSON.stringify(currentState, null, 2));
 
-                    // --- 查找被選中的選項數據 (包含預生成的結果) ---
+                    // --- 查找被選中的選項數據 ---
+                    const currentEventDescription = currentState.currentEvent.description; // *** 獲取當前事件描述 ***
                     const chosenOption = currentState.currentEvent.options.find(opt => opt.id === chosenOptionId);
                     if (!chosenOption || typeof chosenOption.resourceChanges !== 'object' || typeof chosenOption.outcomeText !== 'string') {
                         throw new Error(`找不到選項 ${chosenOptionId} 的有效數據 (resourceChanges 或 outcomeText)。`);
                     }
                     const resourceChanges = chosenOption.resourceChanges;
-                    const outcomeText = chosenOption.outcomeText; // <--- 直接獲取預生成的結果文本
+                    const outcomeText = chosenOption.outcomeText;
 
-                    console.log(`[Option Click V6.0] 選項 ${chosenOptionId} 的 resourceChanges:`, resourceChanges);
-                    console.log(`[Option Click V6.0] 選項 ${chosenOptionId} 的 outcomeText:`, outcomeText);
+                    console.log(`[Option Click V6.1] 選項 ${chosenOptionId} 的 resourceChanges:`, resourceChanges);
+                    console.log(`[Option Click V6.1] 選項 ${chosenOptionId} 的 outcomeText:`, outcomeText);
+                    console.log(`[Option Click V6.1] 當前事件描述:`, currentEventDescription); // 打印描述
 
                     // --- 更新狀態 ---
-                    // 1. 記錄結果到 lastChoiceResult 以便 feedback 畫面使用
                     currentState.lastChoiceResult = {
                         chosenOptionId: chosenOptionId,
-                        resourceChanges: resourceChanges, // 實際應用的變化
-                        outcomeText: outcomeText         // 預生成的文本
+                        resourceChanges: resourceChanges,
+                        outcomeText: outcomeText
                     };
-                    // 2. 計算新資源
                     currentState.resources = applyResourceChanges(currentState.resources, resourceChanges);
-                    // 3. 遞增回合數
                     const previousRound = currentState.roundNumber;
                     currentState.roundNumber = (currentState.roundNumber || 0) + 1;
-                    // 4. 檢查遊戲是否結束
                     const gameOverCheck = checkGameOver(currentState.resources);
                     currentState.gameOver = {
                         isOver: gameOverCheck.isOver,
                         reason: gameOverCheck.reason,
-                        // 結局文本由後端決定，但這裡可以用通用的
                         endingText: gameOverCheck.isOver ? getGenericEndingText(gameOverCheck.reason) : null,
                         finalRounds: gameOverCheck.isOver ? previousRound : null
                     };
-                    // 5. 清除當前事件，因為已經處理完畢，等待 feedback 畫面結束後加載新事件
-                    // currentState.currentEvent = null; // 暫不清空，feedback 可能需要參考
 
-                    console.log("[Option Click V6.0] 處理後 state:", JSON.stringify(currentState, null, 2));
-                    console.log("[Option Click V6.0] 儲存狀態...");
-                    saveGameState(gameStateForProcessing); // 儲存包含 lastChoiceResult 的狀態
+                    console.log("[Option Click V6.1] 處理後 state:", JSON.stringify(currentState, null, 2));
+                    console.log("[Option Click V6.1] 儲存狀態...");
+                    saveGameState(gameStateForProcessing);
 
-                    // --- 更新歷史記錄 ---
-                    console.log("[Option Click V6.0] 更新歷史記錄...");
+                    // --- 更新歷史記錄 (加入事件描述) ---
+                    console.log("[Option Click V6.1] 更新歷史記錄 (含事件描述)...");
                     let currentHistory = loadHistory();
-                    // 記錄玩家的選擇和預生成的結果
-                    const userActionText = `玩家選擇了選項 ${chosenOptionId}。`;
-                    const outcomeForHistory = `結果：${outcomeText} (資源變化: ${JSON.stringify(resourceChanges)})`;
+
+                    // *** 修改 user action 文本以包含事件描述 ***
+                    const userActionText = `回合 ${previousRound} - 事件：${currentEventDescription}\n玩家選擇：選項 ${chosenOptionId} (${chosenOption.text || '選項描述缺失'})`;
+                    const outcomeForHistory = `結果：${outcomeText}\n(資源變化: ${JSON.stringify(resourceChanges)})`;
+
                     currentHistory.push({ role: 'user', parts: [{ text: userActionText }] });
-                    currentHistory.push({ role: 'model', parts: [{ text: outcomeForHistory }] }); // 將前端處理的結果放入歷史
+                    currentHistory.push({ role: 'model', parts: [{ text: outcomeForHistory }] });
+
                     saveHistory(currentHistory);
 
 
                     // --- 導航到反饋畫面 ---
-                    console.log("[Option Click V6.0] 準備導航到 feedback...");
+                    console.log("[Option Click V6.1] 準備導航到 feedback...");
                     navigateTo('feedback-screen.html');
 
                 } catch (error) {
-                    console.error("[Option Click V6.0] 處理選項點擊時發生嚴重錯誤:", error);
+                    console.error("[Option Click V6.1] 處理選項點擊時發生嚴重錯誤:", error);
                     displayError(`處理您的選擇時發生錯誤：${error.message || '未知錯誤'}`);
-                    // 恢復按鈕狀態 (可能需要重新讀取狀態)
+                    // 恢復按鈕狀態
                     document.querySelectorAll('.option-card').forEach(btn => {
-                         const latestState = loadGameState();
-                         const optId = btn.dataset.choice;
-                         if (latestState?.gameState?.currentEvent?.options?.some(o => o.id === optId) && !latestState?.gameState?.gameOver?.isOver) {
-                             btn.disabled = false;
-                         } else {
-                             btn.disabled = true;
-                         }
-                     });
-                    // showLoading(false); // displayError 已處理
+                        const latestState = loadGameState();
+                        const optId = btn.dataset.choice;
+                        if (latestState?.gameState?.currentEvent?.options?.some(o => o.id === optId) && !latestState?.gameState?.gameOver?.isOver) {
+                            btn.disabled = false;
+                        } else {
+                            btn.disabled = true;
+                        }
+                    });
                 }
             });
         } else if (button) {
-             // 如果按鈕存在但 currentEvent 為空或遊戲結束，確保禁用
-             button.disabled = true;
+            button.disabled = true;
         }
     });
+    // ...函數結束
     console.log("--- 主遊戲畫面初始化完畢 (v6.0) ---");
 }
 
